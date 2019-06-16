@@ -174,7 +174,7 @@ class MatchScoresResult(APIResult):
 
     @property
     def unique_id(self):
-        raise NotImplementedError
+        return 'match_id'
 
     @property
     def column_names(self):
@@ -189,7 +189,7 @@ class TournamentsResult(APIResult):
 
     @property
     def unique_id(self):
-        raise NotImplementedError
+        return ['tourney_year', 'tourney_order']
 
     @property
     def column_names(self):

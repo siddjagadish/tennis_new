@@ -104,9 +104,9 @@ def tournaments(year):
     tourney_surface_parsed = xpath_parse(year_tree, tourney_surface_xpath)
     tourney_surface_cleaned = regex_strip_array(tourney_surface_parsed)
 
-    tourney_fin_commit_xpath = "//td[contains(@class, 'fin-commit')]/div/div/span/text()"
-    tourney_fin_commit_parsed = xpath_parse(year_tree, tourney_fin_commit_xpath)
-    tourney_fin_commit_cleaned = regex_strip_array(tourney_fin_commit_parsed)
+    # tourney_fin_commit_xpath = "//td[contains(@class, 'fin-commit')]/div/div/span/text()"
+    # tourney_fin_commit_parsed = xpath_parse(year_tree, tourney_fin_commit_xpath)
+    # tourney_fin_commit_cleaned = regex_strip_array(tourney_fin_commit_parsed)
 
     output = []
     for i in range(0, tourney_count):
@@ -133,10 +133,10 @@ def tournaments(year):
             tourney_conditions = ''
             tourney_surface = ''
 
-        if len(tourney_fin_commit_cleaned[i]) > 0:
-            tourney_fin_commit = tourney_fin_commit_cleaned[i].encode('utf-8')
-        else:
-            tourney_fin_commit = ''
+        # if len(tourney_fin_commit_cleaned[i]) > 0:
+        #     tourney_fin_commit = tourney_fin_commit_cleaned[i].encode('utf-8')
+        # else:
+        #     tourney_fin_commit = ''
 
         # Tourney URL's
         tourney_details_url_xpath = "//tr[contains(@class, 'tourney-result')][" + str(i + 1) + "]/td[8]/a/@href"
@@ -240,14 +240,13 @@ def tournaments(year):
         # Store data
         output.append([year, tourney_order, tourney_name, tourney_id, tourney_slug, tourney_location, tourney_dates,
                        tourney_month, tourney_day, tourney_singles_draw, tourney_doubles_draw, tourney_conditions,
-                       tourney_surface, tourney_fin_commit, tourney_url_suffix, singles_winner_name, singles_winner_url,
+                       tourney_surface, tourney_url_suffix, singles_winner_name, singles_winner_url,
                        singles_winner_player_slug, singles_winner_player_id, doubles_winner_1_name,
                        doubles_winner_1_url, doubles_winner_1_player_slug, doubles_winner_1_player_id,
                        doubles_winner_2_name, doubles_winner_2_url, doubles_winner_2_player_slug,
                        doubles_winner_2_player_id, tourney_year_id])
     # Output progress
-    print
-    year + '    ' + str(tourney_count)
+    print(year + '    ' + str(tourney_count))
     # Output data
     return output
 
@@ -299,14 +298,10 @@ def scrape_year(year):
 
     # Print missing info
     if len(problem_tourneys) > 0:
-        print
-        ''
-        print
-        'Tournaments with missing match info...'
-        print
-        'Year    Order    Tournament'
-        print
-        '----    -----    ----------'
+        print('')
+        print('Tournaments with missing match info...')
+        print('Year    Order    Tournament')
+        print('----    -----    ----------')
 
         for tourney in problem_tourneys:
             year = tourney[0]
@@ -318,8 +313,9 @@ def scrape_year(year):
             for j in range(0, spacing_count):
                 spacing += ' '
 
-            print
-            year + '    ' + str(tourney_order) + spacing + '    ' + tourney_name
+            print(
+                year + '    ' + str(tourney_order) + spacing + '    ' + str(tourney_name)
+            )
 
             # Output data
     output = [tourney_data, tourney_urls]
