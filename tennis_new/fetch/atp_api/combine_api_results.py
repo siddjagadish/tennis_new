@@ -62,8 +62,8 @@ def _combine_data(data_type, static_has_header):
     print("Concatenating...")
     combined = pd.concat(api_results_dfs + static_dfs)  # TODO: Write out this data
     gpd = combined.groupby(result_class.unique_id)
-    if gpd.size().max():
-        print("Warning, duplicate %s found, deduping..." % result_class.unique_id)
+    if gpd.size().max() > 1:
+        print("Warning, %d duplicate %s found, deduping..." % (gpd.size().max(), result_class.unique_id))
         combined.drop_duplicates(result_class.unique_id, inplace=True)
 
     print("Writing...")
