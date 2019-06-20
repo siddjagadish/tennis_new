@@ -1,3 +1,4 @@
 *__pycache__
+*.ipynb_checkpoints
 tennis_new/fetch/atp_api/api_results/
 tennis_new/fetch/stored_data/

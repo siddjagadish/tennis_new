@@ -32,7 +32,15 @@ df = pd.DataFrame(
     columns=_rel_column_names
 )
 df['tourney_fin_commit'] = None
-df = df[tr.column_names]
+df = df[tr.column_names]  # Reorder so that we can concatenate with static data
+
+# stringify byte-valued columns
+# TODO: More robust string encoding -- should write method to apply to all dataframes
+for col in [
+    'tourney_name',
+    'tourney_location'
+]:
+    df[col] = df[col].str.decode('utf-8')
 
 filename = os.path.join(
     tr.api_results_path,

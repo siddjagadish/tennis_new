@@ -48,19 +48,21 @@ def main():
         lambda x: x[:4]
     ).astype(int)
 
+    # Remove some tournaments where vital information is missing
     tourney_data = _fetch_data_for_type('tournaments')
     for col in REL_TOURNEY_COLUMNS:
         _n_to_remove = tourney_data[col].isnull().sum()
         print("Removing %d rows with null values for %s" % (_n_to_remove, col))
         tourney_data = tourney_data[tourney_data[col].notnull()]
 
+    # Join tournaments and match_scores
     non_tourney_columns = list(set(match_scores.columns) - set(tourney_data.columns)) + ['tourney_year', 'tourney_order']
-
     together = pd.merge(
         match_scores[non_tourney_columns],
         tourney_data,
         on=['tourney_year', 'tourney_order']
     )
+
     together.to_csv(
         os.path.join(STORED_DATA_PATH, 'joined.tsv'),
         sep='\t', index=False

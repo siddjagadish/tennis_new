@@ -11,7 +11,11 @@ start_year = str(sys.argv[1])
 end_year = str(sys.argv[2])
 
 # STEP 1: Scrape year page
-tourney_match = []
+msr = MatchScoresResult()
+filename = os.path.join(
+    msr.api_results_path,
+    "match_scores_" + start_year + "-" + end_year + '.csv'
+)
 for h in range(int(start_year), int(end_year) + 1):
 
     year = str(h)
@@ -25,6 +29,7 @@ for h in range(int(start_year), int(end_year) + 1):
     print('----    -----    ----------                                -------')
 
     for i in range(0, len(tourney_urls_scrape)):
+        tourney_match = []
         if len(tourney_urls_scrape[i]) > 0:
             # STEP 2: Scrape tournament page
             scrape_tourney_output = scrape_tourney(tourney_urls_scrape[i])
@@ -49,15 +54,18 @@ for h in range(int(start_year), int(end_year) + 1):
                 spacing2 + ' ' + str(len(match_data_scrape))
             )
 
-        msr = MatchScoresResult()
         cur_df = pd.DataFrame(
             tourney_match,
             columns=msr.column_names
         )
-        filename = os.path.join(
-            msr.api_results_path,
-            "match_scores_" + start_year + "-" + end_year + '.csv'
-        )
+
+        # Encode strings in unicode
+        for col in [
+            'winner_name',
+            'loser_name'
+        ]:
+            cur_df[col] = cur_df[col].str.decode('utf-8')
+
         header = not os.path.exists(filename)
         cur_df.to_csv(
             filename,

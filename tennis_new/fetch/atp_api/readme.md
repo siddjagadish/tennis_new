@@ -9,13 +9,19 @@ Unique ID columns should never be null...
 
 #### How to Use Scripts in this Directory
 
-There are various callable scripts in this directory:
+There are various callable scripts in the scrapers directory:
 
 * match_stats.py: Gets match statistics for each of many matches.  Statistics include:
     * 1st service points won for each player
     * % of first serves in for each player
     * etc.
-* match_results.py: Need to write this one...
+* match_scores.py:
+    * Gets the score of each match
+    * winner name
+    * loser name
+* tournaments.py:
+    * Gets metadata about the tournament, including surface
+   
 
 
 When using these scripts:

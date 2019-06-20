@@ -18,13 +18,6 @@ RESULT_CLASS_MAPPING = {
 OUTPUT_FILENAME = 'combined.csv'
 
 
-def check_prefix(prefix):
-    if prefix not in [
-        'match_stats'  # TODO: Add other types of data
-    ]:
-        raise ValueError("Unrecognized Data Type")
-
-
 def _abs_path_all_files_in_dir(dir):
     # Get absolute path to all files in a directory
     return [
