@@ -39,6 +39,23 @@ def _fetch_data_for_type(dt):
     )
 
 
+def sort_final_df(df: pd.DataFrame) -> None:
+    # Sort the pd.DataFrame by what we hope is ascending chronological order
+    sort_cols = [
+        'tourney_year', 'tourney_month', 'tourney_day', 'round_order', 'match_order'
+    ]
+    for col in sort_cols:
+        if df[col].isnull().any():
+            n_null = df[col].isnull().sum()
+            raise ValueError("Required column %s has %d null values" % (col, n_null))
+
+    df.sort_values(
+        ['tourney_year', 'tourney_month', 'tourney_day', 'round_order', 'match_order'],
+        ascending=[True, True, True, False, True],
+        inplace=True
+    )
+
+
 def main():
     match_scores = _fetch_data_for_type('match_scores')
     for col in set(REL_MATCH_SCORE_COLUMNS) - set(EXCEPTION_MATCH_SCORE_COLS):
@@ -62,6 +79,8 @@ def main():
         tourney_data,
         on=['tourney_year', 'tourney_order']
     )
+
+    sort_final_df(together)
 
     together.to_csv(
         os.path.join(STORED_DATA_PATH, 'joined.tsv'),
