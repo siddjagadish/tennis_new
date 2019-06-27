@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+from datetime import datetime
+
 
 from tennis_new.fetch.defs import STORED_DATA_PATH
 from tennis_new.fetch.atp_api.defs import (
@@ -56,6 +58,7 @@ def _combine_data(data_type, static_has_header):
     combined = pd.concat(api_results_dfs + static_dfs)  # TODO: Write out this data
     gpd = combined.groupby(result_class.unique_id)
     if gpd.size().max() > 1:
+        # TODO: Print out which duplicates exist...
         print("Warning, %d duplicate %s found, deduping..." % (gpd.size().max(), result_class.unique_id))
         combined.drop_duplicates(result_class.unique_id, inplace=True)
 
@@ -64,6 +67,36 @@ def _combine_data(data_type, static_has_header):
         result_class.static_results_path,
         OUTPUT_FILENAME,
     )
+
+    if data_type == 'tournaments':  # Only create date for tournaments
+        for col in [
+            'tourney_year',
+            'tourney_month',
+            'tourney_day'
+        ]:
+            if combined[col].isnull().any():
+                print("Removing %d null entries from col %s" % (combined[col].isnull().sum(), col))
+                combined = combined[combined[col].notnull()]
+
+        combined = combined[combined['tourney_month'].notnull()]
+
+        for col in [
+            'tourney_year',
+            'tourney_month',
+            'tourney_day'
+        ]:
+            assert combined[col].notnull().all(), "Column %s does not permit null values" % col
+            combined[col] = combined[col].astype(int)
+
+        print("Creating date column")
+        combined['tourney_start_date'] = pd.to_datetime(combined.apply(
+            lambda x: datetime(
+                year=x['tourney_year'],
+                month=x['tourney_month'],
+                day=x['tourney_day']
+            ),
+            axis=1
+        ))
     combined.to_csv(out_path, sep=',', index=False)
 
 

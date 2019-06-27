@@ -31,18 +31,20 @@ REL_TOURNEY_COLUMNS = [
 
 
 def _fetch_data_for_type(dt):
+    parse_dates = ['tourney_start_date'] if dt == 'tournaments' else None
     return pd.read_csv(
         os.path.join(
             STORED_DATA_PATH, dt, 'combined.csv'
         ),
         sep=',',
+        parse_dates=parse_dates
     )
 
 
 def sort_final_df(df: pd.DataFrame) -> None:
     # Sort the pd.DataFrame by what we hope is ascending chronological order
     sort_cols = [
-        'tourney_year', 'tourney_month', 'tourney_day', 'round_order', 'match_order'
+        'tourney_start_date', 'round_order', 'match_order'
     ]
     for col in sort_cols:
         if df[col].isnull().any():
@@ -50,8 +52,8 @@ def sort_final_df(df: pd.DataFrame) -> None:
             raise ValueError("Required column %s has %d null values" % (col, n_null))
 
     df.sort_values(
-        ['tourney_year', 'tourney_month', 'tourney_day', 'round_order', 'match_order'],
-        ascending=[True, True, True, False, True],
+        sort_cols,
+        ascending=[True, False, True],
         inplace=True
     )
 

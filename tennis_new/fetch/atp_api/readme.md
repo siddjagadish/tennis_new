@@ -6,6 +6,13 @@ Unique ID columns should never be null...
 
 #### Corrections!:
 * fin_commit was throwing some errors, so have modified the scraper not to scrape this column.  We fill it in with None to combine with the static data 
+* match_id 2019-339-mc10-d994 looks like it was in the future
+
+#### TODOs:
+* Add match stats to joined
+* Make date column in joined
+* See if we can find match date instead of just tourney date
+* Do future date correction above
 
 #### How to Use Scripts in this Directory
 
