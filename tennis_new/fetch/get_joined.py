@@ -31,7 +31,7 @@ REL_TOURNEY_COLUMNS = [
 
 
 def _fetch_data_for_type(dt):
-    parse_dates = ['tourney_start_date'] if dt == 'tournaments' else None
+    parse_dates = ['tourney_dates'] if dt == 'tournaments' else None
     return pd.read_csv(
         os.path.join(
             STORED_DATA_PATH, dt, 'combined.csv'

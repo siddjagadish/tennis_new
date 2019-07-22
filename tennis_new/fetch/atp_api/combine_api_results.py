@@ -1,9 +1,6 @@
 import os
 import pandas as pd
-from datetime import datetime
-
-
-from tennis_new.fetch.defs import STORED_DATA_PATH
+import json
 from tennis_new.fetch.atp_api.defs import (
     MatchScoresResult,
     MatchStatsResult,
@@ -39,7 +36,7 @@ def _combine_data(data_type, static_has_header):
     print("Reading static data...")
     static_dir = result_class.static_results_path
     if OUTPUT_FILENAME in os.listdir(static_dir):  # Use previous combined file if exists...
-        print ("Found existing combined file...")
+        print("Found existing combined file...")
         static_dfs = [
             pd.read_csv(
                 os.path.join(static_dir, OUTPUT_FILENAME)
@@ -57,9 +54,11 @@ def _combine_data(data_type, static_has_header):
     print("Concatenating...")
     combined = pd.concat(api_results_dfs + static_dfs)  # TODO: Write out this data
     gpd = combined.groupby(result_class.unique_id)
-    if gpd.size().max() > 1:
+    gp_counts = gpd.size()
+    if gp_counts.max() > 1:
         # TODO: Print out which duplicates exist...
         print("Warning, %d duplicate %s found, deduping..." % (gpd.size().max(), result_class.unique_id))
+        print("Dupes are %s" % json.dumps(gp_counts[gp_counts > 1].index.tolist()))
         combined.drop_duplicates(result_class.unique_id, inplace=True)
 
     print("Writing...")
@@ -69,34 +68,8 @@ def _combine_data(data_type, static_has_header):
     )
 
     if data_type == 'tournaments':  # Only create date for tournaments
-        for col in [
-            'tourney_year',
-            'tourney_month',
-            'tourney_day'
-        ]:
-            if combined[col].isnull().any():
-                print("Removing %d null entries from col %s" % (combined[col].isnull().sum(), col))
-                combined = combined[combined[col].notnull()]
-
-        combined = combined[combined['tourney_month'].notnull()]
-
-        for col in [
-            'tourney_year',
-            'tourney_month',
-            'tourney_day'
-        ]:
-            assert combined[col].notnull().all(), "Column %s does not permit null values" % col
-            combined[col] = combined[col].astype(int)
-
-        print("Creating date column")
-        combined['tourney_start_date'] = pd.to_datetime(combined.apply(
-            lambda x: datetime(
-                year=x['tourney_year'],
-                month=x['tourney_month'],
-                day=x['tourney_day']
-            ),
-            axis=1
-        ))
+        assert combined['tourney_dates'].notnull().all(), "Cannot have null 'tourney_dates'"
+        combined['tourney_start_date'] = pd.to_datetime(combined['tourney_dates'])
     combined.to_csv(out_path, sep=',', index=False)
 
 

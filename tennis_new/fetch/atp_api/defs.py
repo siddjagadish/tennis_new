@@ -189,7 +189,7 @@ class TournamentsResult(APIResult):
 
     @property
     def unique_id(self):
-        return ['tourney_year', 'tourney_order']
+        return 'tourney_year_id'
 
     @property
     def column_names(self):
