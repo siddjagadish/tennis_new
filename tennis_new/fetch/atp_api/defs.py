@@ -1,9 +1,9 @@
-import os
+from pathlib import Path
 from tennis_new.infra.defs import REPO_DIR
 from tennis_new.fetch.defs import STORED_DATA_PATH
 
 
-API_RESULTS_DIR = os.path.join(
+API_RESULTS_DIR = Path.joinpath(
    REPO_DIR, 'fetch', 'atp_api', 'api_results'
 )
 
@@ -138,14 +138,14 @@ class APIResult(object):
 
     @property
     def api_results_path(self):
-        return os.path.join(
+        return Path.joinpath(
             API_RESULTS_DIR,
             self.name
         )
 
     @property
     def static_results_path(self):
-        return os.path.join(
+        return Path.joinpath(
             STORED_DATA_PATH,
             self.name
         )
