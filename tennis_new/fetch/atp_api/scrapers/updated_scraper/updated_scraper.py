@@ -6,11 +6,10 @@ from pathlib import Path
 OUTPUT_DIR = Path.joinpath(API_RESULTS_DIR, 'updated_api_results')
 # TODO: Set up logging
 
-@click.command()
-@click.option('--start-year', prompt='Start Year')
-@click.option('--end-year', default=2020, prompt='End Year')
-def scrape(start_year, end_year):
+
+def scrape_years(start_year, end_year):
     for year in range(int(start_year), int(end_year)):
+        print("Scraping for year %d..." % year)
         ts = TennisScraper(int(year))
         match_df = ts.match_df()
         match_df.to_csv(
@@ -27,6 +26,13 @@ def scrape(start_year, end_year):
             )
         else:
             print("No challenger matches found for year %d" % year)
+
+
+@click.command()
+@click.option('--start-year', prompt='Start Year')
+@click.option('--end-year', default=2020, prompt='End Year')
+def scrape(start_year, end_year):
+    scrape_years(start_year, end_year)
 
 
 if __name__ == '__main__':

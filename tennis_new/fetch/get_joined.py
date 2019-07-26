@@ -1,94 +1,76 @@
-# TODO: Augment data with manual fixes where necessary
-# For example, Sydney tournament 1975-338 is missing the tournament month
-
 import os
 import pandas as pd
+from pathlib import Path
+from tennis_new.fetch.atp_api.defs import API_RESULTS_DIR
 from tennis_new.fetch.defs import STORED_DATA_PATH
 
 
-REL_MATCH_SCORE_COLUMNS = [
-    'match_id',
-    'tourney_year_id',
-    'loser_player_id',
-    'winner_player_id',
-    'loser_games_won',
-    'winner_games_won',
-    'loser_sets_won',
-    'winner_sets_won',
-    'match_score_tiebreaks'
-]
-EXCEPTION_MATCH_SCORE_COLS = [  # Columns that are allowed to be null
-    'match_score_tiebreaks'
-]
+JD_PATH = Path.joinpath(STORED_DATA_PATH, 'joined.tsv')
 
 
-REL_TOURNEY_COLUMNS = [
-    'tourney_year',
-    'tourney_month',
-    'tourney_day',
-    'tourney_surface',
-]
+def filter_ineligible(jd):
+    print("Filtering Ineligible Matches...")
+    return jd[jd['loser_id'].notnull()]
 
 
-def _fetch_data_for_type(dt):
-    parse_dates = ['tourney_dates'] if dt == 'tournaments' else None
-    return pd.read_csv(
-        os.path.join(
-            STORED_DATA_PATH, dt, 'combined.csv'
-        ),
-        sep=',',
-        parse_dates=parse_dates
+def add_derived_signals(jd):
+    pass
+
+
+def combine_files(atp_files, challenger_files):
+    print("Reading files...")
+    atp_df = pd.concat([pd.read_csv(f) for f in atp_files])
+    challenger_df = pd.concat([pd.read_csv(f) for f in challenger_files])
+    atp_df['tour_type'] = 'atp'
+    challenger_df['tour_type'] = 'challenger'
+    print("Concatenation...")
+    return pd.concat([atp_df, challenger_df])
+
+
+def amalgamate_years():
+    print("Getting File Names...")
+    res_path = Path.joinpath(API_RESULTS_DIR, 'updated_api_results')
+    files = os.listdir(res_path)
+    atp = [Path.joinpath(res_path, x) for x in files if 'challenger' not in x]
+    challenger = [Path.joinpath(res_path, x) for x in files if 'challenger' in x]
+    return combine_files(atp, challenger)
+
+
+def add_match_id(jd):
+    jd['match_id'] = (
+        jd['winner_name'].fillna('W') + '*' +
+        jd['loser_name'].fillna('L') + '*' +
+        jd['tourney_year_id'].fillna('tourney_year_id') + '*' +
+        jd['round'].fillna('round')
     )
 
 
-def sort_final_df(df: pd.DataFrame) -> None:
-    # Sort the pd.DataFrame by what we hope is ascending chronological order
-    sort_cols = [
-        'tourney_start_date', 'round_order', 'match_order'
-    ]
-    for col in sort_cols:
-        if df[col].isnull().any():
-            n_null = df[col].isnull().sum()
-            raise ValueError("Required column %s has %d null values" % (col, n_null))
+def write_joined(jd):
+    print("Writing out...")
+    jd.to_csv(JD_PATH, index=False, sep='\t')
 
-    df.sort_values(
-        sort_cols,
-        ascending=[True, False, True],
+
+def sort_joined(jd):
+    jd.sort_values(
+        ['tourney_dates', 'round_order'],
+        ascending=[True, False],
         inplace=True
     )
 
 
-def main():
-    match_scores = _fetch_data_for_type('match_scores')
-    for col in set(REL_MATCH_SCORE_COLUMNS) - set(EXCEPTION_MATCH_SCORE_COLS):
-        if not match_scores[col].notnull().all():
-            raise ValueError("Column %s has unallowable null values" % col)
-    match_scores['tourney_year'] = match_scores['tourney_year_id'].astype('|S80').map(
-        lambda x: x[:4]
-    ).astype(int)
+def get_joined_from_yearly_files():
+    jd = amalgamate_years()
+    add_match_id(jd)
+    sort_joined(jd)
+    jd.drop_duplicates('match_id', keep='last', inplace=True)
+    add_derived_signals(jd)
+    jd = filter_ineligible(jd)
+    write_joined(jd)
 
-    # Remove some tournaments where vital information is missing
-    tourney_data = _fetch_data_for_type('tournaments')
-    for col in REL_TOURNEY_COLUMNS:
-        _n_to_remove = tourney_data[col].isnull().sum()
-        print("Removing %d rows with null values for %s" % (_n_to_remove, col))
-        tourney_data = tourney_data[tourney_data[col].notnull()]
 
-    # Join tournaments and match_scores
-    non_tourney_columns = list(set(match_scores.columns) - set(tourney_data.columns)) + ['tourney_year', 'tourney_order']
-    together = pd.merge(
-        match_scores[non_tourney_columns],
-        tourney_data,
-        on=['tourney_year', 'tourney_order']
-    )
-
-    sort_final_df(together)
-
-    together.to_csv(
-        os.path.join(STORED_DATA_PATH, 'joined.tsv'),
-        sep='\t', index=False
-    )
+def read_joined():
+    return pd.read_csv(JD_PATH, sep='\t')
 
 
 if __name__ == '__main__':
-    main()
+    get_joined_from_yearly_files()
