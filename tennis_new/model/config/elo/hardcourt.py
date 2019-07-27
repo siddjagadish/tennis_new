@@ -1,8 +1,8 @@
 from tennis_new.model.base import SurfaceWeighter, Surface
-from tennis_new.model.config.elo.base import ELOBaseConfig
+from tennis_new.model.config.elo.base import ELOBaseModel
 
 
-class HardCourtELO(ELOBaseConfig):
+class HardCourtELO(ELOBaseModel):
 
     @property
     def weighter(self):

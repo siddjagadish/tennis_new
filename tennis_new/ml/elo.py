@@ -80,11 +80,11 @@ class ELOModel(object):
         return self.elo(self.beta[p1_id] - self.beta[p2_id])
 
     def state_to_dict(self):
-        return json.dumps({
+        return {
             'beta': self.beta,
             'match_counts': self.match_counts,
             'c': self.c,
             'o': self.o,
             's': self.s,
             'winner_mod': self.winner_mod
-        })
+        }
