@@ -35,7 +35,7 @@ def update_joined_with_year(cur_year):
     current_year = _read_current_year(cur_year)
     add_match_id(current_year)
     jd = read_joined()
-    new_jd = pd.concat([jd, current_year], sort=True)
+    new_jd = pd.concat([jd, current_year], sort=True)  # TODO: What does sort argument do here!?
     sort_joined(new_jd)
     new_jd.drop_duplicates('match_id', keep='last', inplace=True)
     new_jd = filter_ineligible(new_jd)

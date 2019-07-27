@@ -70,7 +70,3 @@ def get_joined_from_yearly_files():
 
 def read_joined():
     return pd.read_csv(JD_PATH, sep='\t')
-
-
-if __name__ == '__main__':
-    get_joined_from_yearly_files()
