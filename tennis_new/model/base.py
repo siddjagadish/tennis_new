@@ -1,3 +1,5 @@
+import numpy as np
+import pandas as pd
 from enum import Enum
 
 
@@ -43,3 +45,47 @@ class Surface(Enum):
     hard = 'Hard'
     carpet = 'Carpet'
     grass = 'Grass'
+
+
+def get_val_test_for_surface(df, surface, n=10000, min_length_days=365, atp_only=False):
+    # Gets the indices for the validation and test set
+    if atp_only:
+        allowed_tours = ['atp']
+    else:
+        allowed_tours = ['atp', 'challenger']
+
+    total_on_surface = (
+            (df['tourney_surface'] == surface) &
+            df['tour_type'].isin(allowed_tours)
+    ).sum()
+    n_test_on_surface = total_on_surface - (
+            (df['tourney_surface'] == surface) &
+            df['tour_type'].isin(allowed_tours)
+    ).cumsum()
+    indexer = np.arange(df.shape[0])
+
+    n_test_start_idx = np.where(n_test_on_surface > n)[0][-1]
+    date_test_start = pd.to_datetime(df['tourney_dates'].max()) - pd.Timedelta(days=min_length_days)
+    date_test_start_idx = np.where(pd.to_datetime(df['tourney_dates']) > date_test_start)[0][0]
+    test_start_idx = min(n_test_start_idx, date_test_start_idx)
+    test_idx = np.where(
+        (indexer >= test_start_idx) &
+        (df['tourney_surface'] == surface) &
+        (df['tour_type'].isin(allowed_tours))
+    )[0]
+
+    n_test = n_test_on_surface.iloc[test_start_idx]
+    test_start_date = pd.to_datetime(df['tourney_dates'].iloc[test_start_idx])
+
+    n_val_start_idx = np.where(n_test_on_surface > n_test + n)[0][-1]
+    date_val_start = pd.to_datetime(test_start_date - pd.Timedelta(days=min_length_days))
+    date_val_start_idx = np.where(pd.to_datetime(df['tourney_dates']) > date_val_start)[0][0]
+    val_start_idx = min(n_val_start_idx, date_val_start_idx)
+    val_idx = np.where(
+        (indexer >= val_start_idx) &
+        (indexer < test_start_idx) &
+        (df['tourney_surface'] == surface) &
+        (df['tour_type'].isin(allowed_tours))
+    )[0]
+
+    return val_idx, test_idx
