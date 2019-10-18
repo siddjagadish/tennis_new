@@ -76,10 +76,23 @@ class MatchResultsParser(object):
         return player_name, player_url, player_id
 
     def _parse_result_row(self, result_row):
+        # TODO: Get match-stats URL
         winner_dt, loser_dt = result_row.xpath("./td[@class='day-table-name']")  # Data tables
         winner_name, winner_url, winner_id = self._get_link_name_from_dt(winner_dt)
         loser_name, loser_url, loser_id = self._get_link_name_from_dt(loser_dt)
-        score = ''.join(regex_strip_array(result_row.xpath("./td[@class='day-table-score']/a/text()")))
+        score_elems = result_row.xpath("./td[@class='day-table-score']/a")
+        if len(score_elems) == 0:
+            score = None
+            match_stats_url = None
+        else:
+            score_elem = score_elems[0]
+            score = regex_strip_array(score_elem.xpath('./text()'))
+            score = [s for s in score if s != '']
+            score = ';'.join(score)
+            if 'href' in score_elem.attrib:
+                match_stats_url = score_elem.attrib['href']
+            else:
+                match_stats_url = None
         self.match_result_list.append({
             'winner_name': winner_name,
             'loser_name': loser_name,
@@ -89,7 +102,8 @@ class MatchResultsParser(object):
             'loser_id': loser_id,
             'round': self._cur_round_name,
             'round_order': self._cur_round_order,
-            'score': score
+            'score': score,
+            'match_stats_url': match_stats_url
         })
 
     def _parse_row(self, table_row):
@@ -212,6 +226,7 @@ class TournamentScraper(object):
             self.tourney_url_suffix = None
 
     def _parse_year_id(self):
+        # TODO: Handle Live Tournaments Better...
         if self.tourney_url_suffix is None:
             self.year_id = None
         else:

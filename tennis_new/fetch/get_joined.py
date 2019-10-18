@@ -19,8 +19,18 @@ def add_derived_signals(jd):
 
 def combine_files(atp_files, challenger_files):
     print("Reading files...")
-    atp_df = pd.concat([pd.read_csv(f) for f in atp_files])
-    challenger_df = pd.concat([pd.read_csv(f) for f in challenger_files])
+    atp_dfs = []
+    challenger_dfs = []
+    for f in atp_files:
+        cur_df = pd.read_csv(f)
+        cur_df['year'] = int(str(f)[-8:-4])  # TODO: Move to def rather than hardcode
+        atp_dfs.append(cur_df)
+    for f in challenger_files:
+        cur_df = pd.read_csv(f)
+        cur_df['year'] = int(str(f)[-8:-4])  # TODO: Move to def rather than hardcode
+        challenger_dfs.append(cur_df)
+    atp_df = pd.concat(atp_dfs)
+    challenger_df = pd.concat(challenger_dfs)
     atp_df['tour_type'] = 'atp'
     challenger_df['tour_type'] = 'challenger'
     print("Concatenation...")
