@@ -226,6 +226,7 @@ class TournamentScraper(object):
             self.tourney_url_suffix = None
 
     def _parse_year_id(self):
+        # TODO: Handle Live Tournaments Better...
         if self.tourney_url_suffix is None:
             self.year_id = None
         else:
