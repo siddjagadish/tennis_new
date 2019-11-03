@@ -2,7 +2,9 @@ import requests
 import numpy as np
 import pandas as pd
 from lxml import html
+from pathlib import Path
 from tennis_new.fetch.tennis_explorer import helpers
+from tennis_new.fetch.tennis_explorer.defs import DATE_FORMAT, DATA_PATH
 
 
 class TennisExplorerParser(object):
@@ -16,13 +18,13 @@ class TennisExplorerParser(object):
         'p2_set%d' % set_idx for set_idx in range(1, 6)
     ]
 
-    def __init__(self, year, month, day):
+    def __init__(self, date):
         self.url = "https://www.tennisexplorer.com/results/?type=atp-single&year={0}&month={1}&day={2}".format(
-            year,
-            month,
-            day
+            str(date.year),
+            str(date.month),
+            str(date.day)
         )
-        self.date = '%s-%s-%s' % (year, month, day)
+        self.date = date.strftime(DATE_FORMAT)
         self.tree = html.fromstring(requests.get(self.url).content)
         tables = self.tree.xpath(".//table[@class='result']")
         assert len(tables) == 2, "Expected two tables, found %d" % len(tables)
@@ -55,7 +57,10 @@ class TennisExplorerParser(object):
 
     @staticmethod
     def validate_df(res_df):
-        if not (res_df['p1_sets_won'] > res_df['p2_sets_won']).all():
+        if not (
+                (res_df['p1_sets_won'] > res_df['p2_sets_won']) |
+                (res_df['comment'] == 'MATCH_NOT_PLAYED')
+        ).all():
             raise ValueError(
                 "P1 should always have won more sets than P2, not the case in rows %s" % str(
                     np.where(res_df['p2_sets_won'] >= res_df['p1_sets_won'])
@@ -69,19 +74,57 @@ class TennisExplorerParser(object):
             raise ValueError(
                 "Missing Some P2 Names"
             )
-        if not res_df['p1_link'].notnull().all():
-            raise ValueError(
-                "Missing Some P1 Links"
-            )
-        if not res_df['p2_link'].notnull().all():
-            raise ValueError(
-                "Missing Some P2 Links"
-            )
+        if res_df['p1_link'].isnull().any():
+            print("Missing %d player 1" % res_df['p1_link'].isnull().sum())
+        if res_df['p2_link'].isnull().any():
+            print("Missing %d player 2 links" % res_df['p2_link'].isnull().sum())
+
+        missing_link = res_df[res_df['tourney_link'].isnull()]
+        if missing_link['tourney_name'].map(
+            lambda x: 'Future' not in x
+        ).any():
+            raise ValueError("Non-Future Tournament Missing Tourney Link")
 
     def to_df(self):
         res_df = pd.DataFrame(self.results)
         res_df.replace({'': None}, inplace=True)
+        if 'comment' not in res_df:
+            res_df['comment'] = None
         for col in self.numeric_columns:
             res_df[col] = res_df[col].astype(float)
         self.validate_df(res_df)
         return res_df
+
+    def path(self):
+        # Get path to write out df
+        return Path.joinpath(DATA_PATH, 'match_results', '%s.csv' % self.date)
+
+    def write_df(self):
+        self.to_df().to_csv(self.path(), index=False)
+
+
+class TennisExplorerTourneyParser(object):
+
+    prefix = "https://www.tennisexplorer.com/"
+    path = Path.joinpath(
+        DATA_PATH,
+        'tourney_summary.csv',
+    )
+
+    def __init__(self, url):
+        self.url = url
+        url_to_try = ('%s%s' % (self.prefix, self.url))
+        self.tree = html.fromstring(requests.get(url_to_try).content)
+        details_elems = self.tree.xpath(".//div[@class='box boxBasic lGray']")
+        assert len(details_elems) == 3
+        details_elem = details_elems[1]
+        self.details = helpers._text(details_elem)  # TODO: Rename _text to public method
+
+    def to_df(self):
+        return pd.DataFrame({
+            'tourney_url': [self.url],
+            'details': [self.details]
+        })
+
+    def write_self(self):
+        self.to_df().to_csv(self.path, mode='a', header=False, index=False)

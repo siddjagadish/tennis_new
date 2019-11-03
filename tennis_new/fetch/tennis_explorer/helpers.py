@@ -76,22 +76,38 @@ def _parse_time(time_elem):
 def _parse_player(player_elem):
     assert player_elem.attrib['class'] == 't-name'
     _ch = player_elem.getchildren()
-    assert len(_ch) == 1
-    link = _ch[0]
-    assert link.tag == 'a'
-    player_link = link.attrib['href']
-    player_name = _text(link)
-    player_maybe_seed = _tail(link)
+    assert len(_ch) <= 1
+    if len(_ch) == 1:
+        link = _ch[0]
+        assert link.tag == 'a'
+        player_link = link.attrib['href']
+        player_name = _text(link)
+        player_maybe_seed = _tail(link)
+    else:
+        player_name = _text(player_elem)
+        player_link = None
+        player_maybe_seed = _tail(player_elem)
     return player_link, player_name, player_maybe_seed
 
 
 def _parse_set_result(set_elem):
-    assert set_elem.attrib['class'] == 'result'
-    return _text(set_elem)
+    elem_class = set_elem.attrib['class']
+    if elem_class == 'result':
+        return _text(set_elem)
+    elif elem_class == 'nbr':
+        return None
+    else:
+        raise ValueError("Unexpected class %s" % elem_class)
 
 
 def _parse_set_score(score_elem):
-    assert score_elem.attrib['class'] == 'score'
+    elem_class = score_elem.attrib['class']
+    if elem_class == 'score':
+        return _text(score_elem)
+    elif elem_class == 'score nbr':
+        return None
+    else:
+        raise ValueError("Unexpected class %s" % elem_class)
     return _text(score_elem)
 
 
@@ -104,6 +120,16 @@ def _parse_away_odds(odds_elem):
     assert odds_elem.attrib['class'] == 'course'
     return _text(odds_elem)
 
+
+def _parse_match_link(match_link_elem):
+    ch = match_link_elem.getchildren()
+    assert len(ch) == 1
+    assert ch[0].tag == 'a'
+    match_link = ch[0].attrib['href']
+    assert _text(ch[0]) == 'info'
+    return {
+        'match_link': match_link
+    }
 
 def parse_bott_row(tr):
     ret = {}
@@ -123,6 +149,9 @@ def parse_bott_row(tr):
         ret.update({'p1_set%d' % (set_idx + 1): _parse_set_score(entry)})
     ret.update({'p1_odds': _parse_home_odds(ch[8])})
     ret.update({'p2_odds': _parse_away_odds(ch[9])})
+    ret.update(_parse_match_link(ch[11]))
+    if ret['p1_sets_won'] is None:
+        ret['comment'] = 'MATCH_NOT_PLAYED'
     return ret
 
 
@@ -138,5 +167,7 @@ def parse_nonbott_row(tr, player_idx=2):
     ret.update({'p2_sets_won': _parse_set_result(ch[1])})
     for set_idx, entry in enumerate(ch[2:7]):
         ret.update({'p2_set%d' % (set_idx + 1): _parse_set_score(entry)})
+    if ret['p2_sets_won'] is None:
+        ret['comment'] = 'MATCH_NOT_PLAYED'
     return ret
 
