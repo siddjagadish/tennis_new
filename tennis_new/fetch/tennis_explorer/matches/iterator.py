@@ -1,6 +1,6 @@
 import click
 from datetime import datetime, timedelta
-from tennis_new.fetch.tennis_explorer.scraper import TennisExplorerParser
+from tennis_new.fetch.tennis_explorer.matches.scraper import TennisExplorerParser
 from tennis_new.fetch.tennis_explorer.defs import DATE_FORMAT, ERROR_FILE
 from time import sleep
 

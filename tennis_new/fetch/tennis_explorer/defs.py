@@ -3,4 +3,5 @@ from pathlib import Path
 
 DATE_FORMAT = '%Y-%m-%d'
 DATA_PATH = Path.joinpath(REPO_DIR, 'fetch', 'tennis_explorer', 'stored_data_w_link')
+JD_PATH = Path.joinpath(DATA_PATH, 'joined.csv')
 ERROR_FILE = Path.joinpath(REPO_DIR, 'fetch', 'tennis_explorer', 'stored_data_w_link', 'errors.log')
