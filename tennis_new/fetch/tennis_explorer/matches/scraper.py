@@ -18,6 +18,8 @@ class TennisExplorerParser(object):
         'p2_set%d' % set_idx for set_idx in range(1, 6)
     ]
 
+    NO_RESULTS_LOG = Path.joinpath(DATA_PATH, 'no_results_log.log')
+
     def __init__(self, date):
         self.url = "https://www.tennisexplorer.com/results/?type=atp-single&year={0}&month={1}&day={2}".format(
             str(date.year),
@@ -34,6 +36,7 @@ class TennisExplorerParser(object):
         _tbody = _children[0]
         assert _tbody.tag == 'tbody'
         self.table_rows = _tbody.getchildren()
+        self.no_results = helpers.check_no_results(self.table_rows[0])
         self.results = []
 
     def _process_table_row(self, tr):
@@ -52,8 +55,9 @@ class TennisExplorerParser(object):
             self.results.append(self.cur_result)
 
     def process(self):
-        for row in self.table_rows:
-            self._process_table_row(row)
+        if not self.no_results:
+            for row in self.table_rows:
+                self._process_table_row(row)
 
     @staticmethod
     def validate_df(res_df):
@@ -86,18 +90,24 @@ class TennisExplorerParser(object):
             raise ValueError("Non-Future Tournament Missing Tourney Link")
 
     def to_df(self):
-        res_df = pd.DataFrame(self.results)
-        res_df.replace({'': None}, inplace=True)
-        if 'comment' not in res_df:
-            res_df['comment'] = None
-        for col in self.numeric_columns:
-            res_df[col] = res_df[col].astype(float)
-        self.validate_df(res_df)
-        return res_df
+        if not self.no_results:
+            res_df = pd.DataFrame(self.results)
+            res_df.replace({'': None}, inplace=True)
+            if 'comment' not in res_df:
+                res_df['comment'] = None
+            for col in self.numeric_columns:
+                res_df[col] = res_df[col].astype(float)
+            self.validate_df(res_df)
+            return res_df
 
     def path(self):
         # Get path to write out df
         return Path.joinpath(DATA_PATH, 'match_results', '%s.csv' % self.date)
 
     def write_df(self):
-        self.to_df().to_csv(self.path(), index=False)
+        if not self.no_results:
+            self.to_df().to_csv(self.path(), index=False)
+        else:
+            with open(self.NO_RESULTS_LOG, 'a') as wr:
+                wr.write(self.date)
+                wr.write('\n')

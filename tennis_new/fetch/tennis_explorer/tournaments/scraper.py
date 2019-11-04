@@ -13,6 +13,7 @@ class TennisExplorerTourneyParser(object):
         DATA_PATH,
         'tourney_summary.csv',
     )
+    column_names=['tourney_link', 'details']
 
     def __init__(self, url):
         self.url = url
@@ -25,9 +26,9 @@ class TennisExplorerTourneyParser(object):
 
     def to_df(self):
         return pd.DataFrame({
-            'tourney_url': [self.url],
+            'tourney_link': [self.url],
             'details': [self.details]
         })
 
-    def write_self(self):
+    def write(self):
         self.to_df().to_csv(self.path, mode='a', header=False, index=False)

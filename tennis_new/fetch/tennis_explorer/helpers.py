@@ -171,3 +171,11 @@ def parse_nonbott_row(tr, player_idx=2):
         ret['comment'] = 'MATCH_NOT_PLAYED'
     return ret
 
+
+def check_no_results(tr):
+    # Checks if the first row in the table says 'No Results Available for this day...'
+    ch = tr.getchildren()
+    if len(ch) == 1:
+        return _text(ch[0]) == 'No results for this day yet.'
+    else:
+        return False
