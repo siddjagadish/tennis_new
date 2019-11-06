@@ -10,6 +10,7 @@ ERROR_SLEEP_SECONDS = 10
 
 
 def scrape_tourneys(overwrite=False, verbose=True, wait_time=0):
+    # Scrape the tournaments that exist in match file but have not been scraped yet
     cur_matches = pd.read_csv(ALL_MATCH_PATH)
     if (not overwrite) and os.path.exists(TennisExplorerTourneyParser.path):
         cur_tourneys = pd.read_csv(

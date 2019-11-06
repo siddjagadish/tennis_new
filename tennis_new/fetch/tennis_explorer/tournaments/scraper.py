@@ -20,7 +20,7 @@ class TennisExplorerTourneyParser(object):
         url_to_try = ('%s%s' % (self.prefix, self.url))
         self.tree = html.fromstring(requests.get(url_to_try).content)
         details_elems = self.tree.xpath(".//div[@class='box boxBasic lGray']")
-        assert len(details_elems) == 3
+        assert len(details_elems) in [3, 4]  # Sometimes 4
         details_elem = details_elems[1]
         self.details = helpers._text(details_elem)  # TODO: Rename _text to public method
 
