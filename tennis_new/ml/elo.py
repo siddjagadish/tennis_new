@@ -1,5 +1,4 @@
 # Old Elo Class -- try with labels always 1
-import json
 import numpy as np
 from collections import defaultdict
 
@@ -29,23 +28,23 @@ class ELOModel(object):
         # Just a rescaled sigmoid
         return 1. / (1. + 10. ** (-x / 400.))
 
-    def update(self, p1_id, p2_id, y, weight=1., match_id=None):
+    def update(self, p1_id, p2_id, y, weight=1., match_id=None, use_for_update=1):
         pred = self.predict(p1_id, p2_id)
-
-        lr1 = weight * self.c / ((self.match_counts[p1_id] + self.o) ** self.s)
-        lr2 = weight * self.c / ((self.match_counts[p2_id] + self.o) ** self.s)
-
         old_beta1 = self.beta[p1_id]
         old_beta2 = self.beta[p2_id]
 
-        new_beta1 = self.beta[p1_id] + lr1 * (y - pred)
-        new_beta2 = self.beta[p2_id] + lr2 * (pred - y)
+        if use_for_update == 1:
+            lr1 = weight * self.c / ((self.match_counts[p1_id] + self.o) ** self.s)
+            lr2 = weight * self.c / ((self.match_counts[p2_id] + self.o) ** self.s)
 
-        self.beta[p1_id] = new_beta1
-        self.beta[p2_id] = new_beta2
+            new_beta1 = self.beta[p1_id] + lr1 * (y - pred)
+            new_beta2 = self.beta[p2_id] + lr2 * (pred - y)
 
-        self.match_counts[p1_id] += 1
-        self.match_counts[p2_id] += 1
+            self.beta[p1_id] = new_beta1
+            self.beta[p2_id] = new_beta2
+
+            self.match_counts[p1_id] += 1
+            self.match_counts[p2_id] += 1
 
         return {
             'match_id': match_id,
@@ -56,7 +55,12 @@ class ELOModel(object):
             'elo_match_prediction': pred
         }
 
-    def fit_and_backfill(self, p1_ids, p2_ids, match_ids, ys=None, weights=None):
+    def fit_and_backfill(self, p1_ids, p2_ids, match_ids, ys=None, weights=None, filter_mask=None):
+        if filter_mask is None:
+            filter_mask = np.ones(len(p1_ids)).astype(int)
+        else:
+            filter_mask = filter_mask.astype(int)
+
         if ys is None:
             if not self.winner_mod:
                 raise ValueError(
@@ -65,15 +69,17 @@ class ELOModel(object):
             ys = np.ones(len(p1_ids)).tolist()
         if weights is None:
             weights = np.ones(len(p1_ids)).tolist()
-        for p1_id, p2_id, y, w, match_id in zip(
+
+        for p1_id, p2_id, y, w, match_id, fm in zip(
                 p1_ids,
                 p2_ids,
                 ys,
                 weights,
-                match_ids
+                match_ids,
+                filter_mask
         ):
             self.history.append(
-                self.update(p1_id, p2_id, y, weight=w, match_id=match_id)
+                self.update(p1_id, p2_id, y, weight=w, match_id=match_id, use_for_update=fm)
             )
 
     def predict(self, p1_id, p2_id):
