@@ -14,6 +14,10 @@ class ELOBaseModel(BaseModel):
         return {'winner_mod': True}
 
     @property
+    def weighter(self):
+        raise NotImplementedError()
+
+    @property
     def winner_id_col(self):
         return 'winner_name'
 

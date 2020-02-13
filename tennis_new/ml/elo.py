@@ -44,7 +44,6 @@ class ELOModel(object):
             p1_lose_update = -pred
             p2_lose_update = pred - 1.
 
-
             beta1_total_update = p1_win_update * y1 + p1_lose_update * y2
             beta2_total_update = p2_win_update * y2 + p2_lose_update * y1
             new_beta1 = self.beta[p1_id] + lr1 * beta1_total_update
