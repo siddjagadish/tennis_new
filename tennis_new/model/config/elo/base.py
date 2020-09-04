@@ -1,5 +1,11 @@
+import pandas as pd
 from tennis_new.model.config.base import BaseModel
-from tennis_new.model.utils.filters import TrainingFilter
+from tennis_new.model.utils.filters import (
+    Filter,
+    DateFilter,
+    TrainingFilter
+)
+from tennis_new.model.utils.evaluation import BasicEvaluator
 from tennis_new.ml.elo import ELOModel
 
 
@@ -34,6 +40,24 @@ class ELOBaseModel(BaseModel):
     def training_filter(self):
         return TrainingFilter
 
+    @property
+    def test_filter(self):
+        class MyTestFilter(Filter):
+            sub_filters = [
+                self.training_filter,
+                DateFilter(min_date='2011-01-01', max_date='2015-01-01')
+            ]
+        return MyTestFilter
+
+    @property
+    def baseline_pred_col(self):
+        return 'odds_implied_probability'
+
+    @property
+    def evaluator(self):
+        # return BasicEvaluator('prediction', self.baseline_pred_col)  # TODO: Reinclude this
+        return BasicEvaluator('prediction')
+
     def fit(self, X, y=None):
         # TODO: Should make y a property and expect a df instead of X?
         assert self.winner_id_col in X
@@ -47,6 +71,18 @@ class ELOBaseModel(BaseModel):
             weights=self.weighter.weight(X),
             filter_mask=train_mask
         )
+
+    def run(self, X, y=None):
+        self.fit(X, y=None)
+        test_set = self.test_filter.filter_data(X)
+        for_eval_df = pd.merge(
+            test_set,
+            self.history_df,
+            left_on=self.match_id_col,
+            right_on='match_id'  # TODO: Make fit_and_backfill use self.match_id_col?
+        )
+        assert for_eval_df.shape[0] == test_set.shape[0]
+        self.evaluation = self.evaluator.evaluate(for_eval_df)
 
     def update(self, X, y):
         # For now, update just calls fit

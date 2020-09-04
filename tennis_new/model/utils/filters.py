@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Filter(object):
 
     sub_filters = []

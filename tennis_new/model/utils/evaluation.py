@@ -1,5 +1,9 @@
 import pandas as pd
 from tennis_new.model.utils.filters import PossibleWalkoverFilter
+from tennis_new.model.utils.metrics import (
+    AUCMetric,
+    AccuracyMetric
+)
 
 
 def get_test_set(df, test_min='2011-01-01', test_max='2015-01-01', test_surface=None, filter_walkovers=True):
@@ -61,8 +65,7 @@ class Evaluator(object):
         out = {}
         for pred_col in self.prediction_cols:
             for metric in self.metrics:
-                out.update(self.metric.calculate_metric(df))
-            out = {'%s_%s' % (pred_col, k) for k, v in out.items()}
+                out.update(metric.calculate_metric(df, pred_col))
         return out
 
 
@@ -71,6 +74,6 @@ class BasicEvaluator(Evaluator):
     @property
     def metrics(self):
         return [
-            AUCMetric,
-            AccuracyMetric
+            AUCMetric(),
+            AccuracyMetric()
         ]
