@@ -39,7 +39,7 @@ class ELOBaseModel(BaseModel):
         assert self.winner_id_col in X
         assert self.loser_id_col in X
         train_mask = self.training_filter.keep_condition(X)
-        self.predictor.fit_and_backfill(
+        self.history_df = self.predictor.fit_and_backfill(
             X[self.winner_id_col],
             X[self.loser_id_col],
             X[self.match_id_col],

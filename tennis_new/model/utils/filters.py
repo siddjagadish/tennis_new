@@ -14,7 +14,7 @@ class Filter(object):
         return out
 
     @classmethod
-    def filter(cls, df):
+    def filter_data(cls, df):
         return df[cls.keep_condition(df)]
 
 

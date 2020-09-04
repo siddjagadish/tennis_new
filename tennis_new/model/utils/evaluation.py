@@ -45,3 +45,32 @@ def eval_mod(mod, df, test_min='2011-01-01', test_max='2015-01-01', test_surface
         'n_w_odds': n_w_odds
     }
 
+
+class Evaluator(object):
+
+    def __init__(self, *prediction_cols):
+        # List of prediction columns to compare
+        self.prediction_cols = prediction_cols
+
+    @property
+    def metrics(self):
+        # List of metrics to use for evaluation
+        raise NotImplementedError()
+
+    def evaluate(self, df):
+        out = {}
+        for pred_col in self.prediction_cols:
+            for metric in self.metrics:
+                out.update(self.metric.calculate_metric(df))
+            out = {'%s_%s' % (pred_col, k) for k, v in out.items()}
+        return out
+
+
+class BasicEvaluator(Evaluator):
+
+    @property
+    def metrics(self):
+        return [
+            AUCMetric,
+            AccuracyMetric
+        ]

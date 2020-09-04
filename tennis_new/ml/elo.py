@@ -1,5 +1,5 @@
-# Old Elo Class -- try with labels always 1
 import numpy as np
+import pandas as pd
 from collections import defaultdict
 
 
@@ -58,11 +58,11 @@ class ELOModel(object):
 
         return {
             'match_id': match_id,
+            'prediction': pred,
             'p1_id': p1_id,
             'p2_id': p2_id,
             'elo1': old_beta1,
             'elo2': old_beta2,
-            'elo_match_prediction': pred
         }
 
     def fit_and_backfill(self, p1_ids, p2_ids, match_ids, ys=None, weights=None, filter_mask=None):
@@ -104,6 +104,7 @@ class ELOModel(object):
             self.history.append(
                 self.update(p1_id, p2_id, y1, y2, weight=w, match_id=match_id, use_for_update=fm)
             )
+        return pd.DataFrame(self.history)
 
     def predict(self, p1_id, p2_id):
         return self.elo(self.beta[p1_id] - self.beta[p2_id])
