@@ -1,4 +1,5 @@
 from tennis_new.model.config.base import BaseModel
+from tennis_new.model.utils.filters import TrainingFilter
 from tennis_new.ml.elo import ELOModel
 
 
@@ -31,12 +32,13 @@ class ELOBaseModel(BaseModel):
 
     @property
     def training_filter(self):
-        return NotImplementedError()
+        return TrainingFilter
 
     def fit(self, X, y=None):
+        # TODO: Should make y a property and expect a df instead of X?
         assert self.winner_id_col in X
         assert self.loser_id_col in X
-        # train_mask = self.training_filter.keep_condition(X)  # TODO: Include This
+        train_mask = self.training_filter.keep_condition(X)
         self.predictor.fit_and_backfill(
             X[self.winner_id_col],
             X[self.loser_id_col],
