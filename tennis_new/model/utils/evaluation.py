@@ -44,3 +44,4 @@ def eval_mod(mod, df, test_min='2011-01-01', test_max='2015-01-01', test_surface
         'model_odds_accuracy': mod_odds_accuracy,
         'n_w_odds': n_w_odds
     }
+

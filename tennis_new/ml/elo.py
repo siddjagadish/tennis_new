@@ -117,3 +117,4 @@ class ELOModel(object):
             's': self.s,
             'winner_mod': self.winner_mod
         }
+
