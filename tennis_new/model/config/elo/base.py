@@ -19,25 +19,31 @@ class ELOBaseModel(BaseModel):
 
     @property
     def winner_id_col(self):
-        return 'winner_name'
+        return 'p1_link'
 
     @property
     def loser_id_col(self):
-        return 'loser_name'
+        return 'p2_link'
 
     @property
     def match_id_col(self):
-        return 'match_id'
+        return 'match_link'
+
+    @property
+    def training_filter(self):
+        return NotImplementedError()
 
     def fit(self, X, y=None):
         assert self.winner_id_col in X
         assert self.loser_id_col in X
+        # train_mask = self.training_filter.keep_condition(X)  # TODO: Include This
         self.predictor.fit_and_backfill(
             X[self.winner_id_col],
             X[self.loser_id_col],
             X[self.match_id_col],
-            ys=None,
-            weights=self.weighter.weight(X)
+            ys=y,
+            weights=self.weighter.weight(X),
+            filter_mask=train_mask
         )
 
     def update(self, X, y):
