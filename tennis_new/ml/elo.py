@@ -28,23 +28,33 @@ class ELOModel(object):
         # Just a rescaled sigmoid
         return 1. / (1. + 10. ** (-x / 400.))
 
-    def update(self, p1_id, p2_id, y, weight=1., match_id=None, use_for_update=1):
+    def update(self, p1_id, p2_id, y1, y2, weight=1., match_id=None, use_for_update=1):
+        # y1 is # of times in a match (sets, games, etc.) p1 beat p2; y2 is the opposite.
         pred = self.predict(p1_id, p2_id)
         old_beta1 = self.beta[p1_id]
         old_beta2 = self.beta[p2_id]
 
         if use_for_update == 1:
+            # Learning Rates
             lr1 = weight * self.c / ((self.match_counts[p1_id] + self.o) ** self.s)
             lr2 = weight * self.c / ((self.match_counts[p2_id] + self.o) ** self.s)
 
-            new_beta1 = self.beta[p1_id] + lr1 * (y - pred)
-            new_beta2 = self.beta[p2_id] + lr2 * (pred - y)
+            p1_win_update = 1. - pred
+            p2_win_update = pred
+            p1_lose_update = -pred
+            p2_lose_update = pred - 1.
+
+            beta1_total_update = p1_win_update * y1 + p1_lose_update * y2
+            beta2_total_update = p2_win_update * y2 + p2_lose_update * y1
+            new_beta1 = self.beta[p1_id] + lr1 * beta1_total_update
+            new_beta2 = self.beta[p2_id] + lr2 * beta2_total_update
 
             self.beta[p1_id] = new_beta1
             self.beta[p2_id] = new_beta2
 
-            self.match_counts[p1_id] += 1
-            self.match_counts[p2_id] += 1
+            n_obs = int(y1 + y2)
+            self.match_counts[p1_id] += n_obs
+            self.match_counts[p2_id] += n_obs
 
         return {
             'match_id': match_id,
@@ -56,6 +66,8 @@ class ELOModel(object):
         }
 
     def fit_and_backfill(self, p1_ids, p2_ids, match_ids, ys=None, weights=None, filter_mask=None):
+        assert len(p1_ids) == len(p2_ids) == len(match_ids)
+
         if filter_mask is None:
             filter_mask = np.ones(len(p1_ids)).astype(int)
         else:
@@ -66,20 +78,31 @@ class ELOModel(object):
                 raise ValueError(
                     "Must specify that this is a 'winner mod' (1st index is always winner) or must supply y values"
                 )
-            ys = np.ones(len(p1_ids)).tolist()
+            y1s = np.ones(len(p1_ids)).astype(int).tolist()
+            y2s = np.zeros(len(p1_ids)).astype(int).tolist()
+        elif ys.shape[1] > 1:  # If set model
+            ys = ys.astype(int)
+            y1s = ys[:, 0]
+            y2s = ys[:, 1]
+        else:
+            ys = ys.astype(int)
+            y1s = ys
+            y2s = 1 - ys
+
         if weights is None:
             weights = np.ones(len(p1_ids)).tolist()
 
-        for p1_id, p2_id, y, w, match_id, fm in zip(
+        for p1_id, p2_id, y1, y2, w, match_id, fm in zip(
                 p1_ids,
                 p2_ids,
-                ys,
+                y1s,
+                y2s,
                 weights,
                 match_ids,
                 filter_mask
         ):
             self.history.append(
-                self.update(p1_id, p2_id, y, weight=w, match_id=match_id, use_for_update=fm)
+                self.update(p1_id, p2_id, y1, y2, weight=w, match_id=match_id, use_for_update=fm)
             )
 
     def predict(self, p1_id, p2_id):
@@ -94,3 +117,4 @@ class ELOModel(object):
             's': self.s,
             'winner_mod': self.winner_mod
         }
+
