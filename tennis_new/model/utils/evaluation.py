@@ -6,7 +6,8 @@ from tennis_new.model.utils.filters import (
 )
 from tennis_new.model.utils.metrics import (
     AUCMetric,
-    AccuracyMetric
+    AccuracyMetric,
+    LogLikelihoodMetric
 )
 
 
@@ -99,5 +100,6 @@ class BasicEvaluator(Evaluator):
     def metrics(self):
         return [
             AUCMetric(),
-            AccuracyMetric()
+            AccuracyMetric(),
+            LogLikelihoodMetric()
         ]

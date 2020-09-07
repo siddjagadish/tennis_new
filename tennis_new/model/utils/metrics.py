@@ -59,3 +59,8 @@ class AccuracyMetric(Metric):
     def _metric(self, df, pred_col):
         # NOTE: Could use >= in line below?
         return (df[pred_col] > 0.5).mean()
+
+
+class LogLikelihoodMetric(Metric):
+    def _metric(self, df, pred_col):
+        return np.log(df[pred_col]).mean()

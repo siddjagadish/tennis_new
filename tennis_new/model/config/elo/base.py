@@ -1,9 +1,9 @@
 import pandas as pd
 from tennis_new.model.config.base import BaseModel
+from tennis_new.model.base import DummyWeighter
 from tennis_new.model.utils.filters import (
     Filter,
     DateFilter,
-    DummyFilter,
     TrainingFilter,
 )
 from tennis_new.model.utils.evaluation import BasicEvaluator
@@ -23,7 +23,7 @@ class ELOBaseModel(BaseModel):
 
     @property
     def weighter(self):
-        raise NotImplementedError()
+        return DummyWeighter()
 
     @property
     def winner_id_col(self):
@@ -67,21 +67,29 @@ class ELOBaseModel(BaseModel):
     def evaluator(self):
         return BasicEvaluator('prediction', self.baseline_pred_col)
 
-    def fit(self, X, y=None):
+    def post_process(self):
+        # Any post-processing steps for the predictions
+        pass
+
+    def fit(self, df):
         # TODO: Should make y a property and expect a df instead of X?
-        assert self.winner_id_col in X
-        assert self.loser_id_col in X
-        train_mask = self.training_filter.keep_condition(X)
+        assert self.winner_id_col in df
+        assert self.loser_id_col in df
+        train_mask = self.training_filter.keep_condition(df)
+        if self.y is not None:
+            ys = df[self.y].values
+        else:
+            ys = None
         self.history_df = self.predictor.fit_and_backfill(
-            X[self.winner_id_col],
-            X[self.loser_id_col],
-            X[self.match_id_col],
-            ys=y,
-            weights=self.weighter.weight(X),
+            df[self.winner_id_col],
+            df[self.loser_id_col],
+            df[self.match_id_col],
+            ys=ys,
+            weights=self.weighter.weight(df),
             filter_mask=train_mask
         )
         self.all_jd = pd.merge(
-            X,
+            df,
             self.history_df,
             left_on=self.match_id_col,
             right_on='match_id',
@@ -96,11 +104,12 @@ class ELOBaseModel(BaseModel):
             )
         return self.evaluator.evaluate(for_eval_df)
 
-    def run(self, X, y=None):
-        self.fit(X, y)
+    def run(self, jd):
+        self.fit(jd)
+        self.post_process()
         self.validation_evaluation = self._run_evaluation(self.validation_filter)
         self.test_evaluation = self._run_evaluation(self.test_filter)
 
-    def update(self, X, y):
+    def update(self, jd):
         # For now, update just calls fit
-        self.fit(X, y)
+        self.fit(jd)

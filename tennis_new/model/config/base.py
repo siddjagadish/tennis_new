@@ -34,17 +34,21 @@ class BaseModel(object):
     def test_filter(self):
         raise NotImplementedError()
 
-    def data_validation(self, X, y):
-        # Validate the X and y data.  By default, do nothing
+    @property
+    def y(self):
+        return None
+
+    def data_validation(self, df):
+        # Validate the input data
         pass
 
-    def fit(self, X, y=None):
+    def fit(self, df):
         # Resets and fits predictor based on X, y
         raise NotImplementedError()
 
-    def update(self, X, y):
+    def update(self, df):
         # Updates predictor based on X, y -- not necessarily only new data
-        self.predictor.update(X, y)
+        self.predictor.update(df)
 
     def state_to_dict(self):
         return {
