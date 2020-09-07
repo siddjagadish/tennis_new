@@ -31,6 +31,12 @@ def parse_details(d):
     }
 
 
+def add_derived_signals(jd):
+    odds_p1_raw = 1. / jd['p1_odds']
+    odds_p2_raw = 1. / jd['p2_odds']
+    jd['odds_implied_probability'] = odds_p1_raw / (odds_p1_raw + odds_p2_raw)
+
+
 def get_joined(rewrite_match_file=False):
     if rewrite_match_file:
         print("Writing match file from dailies...")
@@ -49,6 +55,7 @@ def get_joined(rewrite_match_file=False):
     assert tourneys.shape[0] == prior_len
     print("Merging...")
     jd = pd.merge(matches, tourneys, on='tourney_link', how='left')
+    add_derived_signals(jd)  # TODO: This is inefficient: Derives all signals on all data everyday
     print("Writing...")
     jd.to_csv(JD_PATH, index=False)
 

@@ -18,6 +18,16 @@ class Weighter(object):
         raise NotImplementedError()
 
 
+class DummyWeighter(Weighter):
+
+    @property
+    def required_columns(self):
+        return []
+
+    def weight(self, df):
+        return np.ones(len(df))
+
+
 class SurfaceWeighter(Weighter):
 
     def __init__(self, weight_dict):
@@ -31,7 +41,7 @@ class SurfaceWeighter(Weighter):
         ]
 
     def weight(self, df):
-        return df['tourney_surface'].map(lambda x: self.weight_dict[x]).values
+        return df['tourney_surface'].map(self.weight_dict).values
 
     def state_to_dict(self):
         return {
@@ -87,5 +97,5 @@ def get_val_test_for_surface(df, surface, n=10000, min_length_days=365, atp_only
         (df['tourney_surface'] == surface) &
         (df['tour_type'].isin(allowed_tours))
     )[0]
-
     return val_idx, test_idx
+

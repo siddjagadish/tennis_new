@@ -1,5 +1,13 @@
 import pandas as pd
-from tennis_new.model.utils.filters import PossibleWalkoverFilter
+from tennis_new.model.utils.filters import (
+    DummyFilter,
+    HasOddsFilter,
+    PossibleWalkoverFilter,
+)
+from tennis_new.model.utils.metrics import (
+    AUCMetric,
+    AccuracyMetric
+)
 
 
 def get_test_set(df, test_min='2011-01-01', test_max='2015-01-01', test_surface=None, filter_walkovers=True):
@@ -45,3 +53,51 @@ def eval_mod(mod, df, test_min='2011-01-01', test_max='2015-01-01', test_surface
         'n_w_odds': n_w_odds
     }
 
+
+class Evaluator(object):
+    '''
+        Class that takes filters and metrics, runs each metric under each filter, and returns a dict
+    '''
+
+    def __init__(self, *prediction_cols):
+        # List of prediction columns to compare
+        self.prediction_cols = prediction_cols
+
+    @property
+    def filters(self):
+        return [DummyFilter]
+
+    @property
+    def metrics(self):
+        # List of metrics to use for evaluation
+        raise NotImplementedError()
+
+    def evaluate(self, df):
+        out = {}
+        for pred_col in self.prediction_cols:
+            for cur_filter in self.filters:
+                new_out = {}
+                cur_df = cur_filter.filter_data(df)
+                for metric in self.metrics:
+                    new_out.update(metric.calculate_metric(cur_df, pred_col))
+                # TODO: Add filter_name property to filters to replace .__class__.__name__ below
+                new_out = {'%s_%s' % (cur_filter.__class__.__name__, k):v for k, v in new_out.items()}
+                out.update(new_out)
+        return out
+
+
+class BasicEvaluator(Evaluator):
+
+    @property
+    def filters(self):
+        return [
+            DummyFilter(),
+            HasOddsFilter(),
+        ]
+
+    @property
+    def metrics(self):
+        return [
+            AUCMetric(),
+            AccuracyMetric()
+        ]
