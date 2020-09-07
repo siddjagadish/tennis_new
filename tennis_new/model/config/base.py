@@ -38,17 +38,17 @@ class BaseModel(object):
     def y(self):
         return None
 
-    def data_validation(self, jd):
-        # Validate the X and y data.  By default, do nothing
+    def data_validation(self, df):
+        # Validate the input data
         pass
 
-    def fit(self, jd):
+    def fit(self, df):
         # Resets and fits predictor based on X, y
         raise NotImplementedError()
 
-    def update(self, jd):
+    def update(self, df):
         # Updates predictor based on X, y -- not necessarily only new data
-        self.predictor.update(X, y)
+        self.predictor.update(df)
 
     def state_to_dict(self):
         return {
