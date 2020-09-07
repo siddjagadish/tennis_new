@@ -67,6 +67,10 @@ class ELOBaseModel(BaseModel):
     def evaluator(self):
         return BasicEvaluator('prediction', self.baseline_pred_col)
 
+    def post_process(self):
+        # Any post-processing steps for the predictions
+        pass
+
     def fit(self, df):
         # TODO: Should make y a property and expect a df instead of X?
         assert self.winner_id_col in df
@@ -102,6 +106,7 @@ class ELOBaseModel(BaseModel):
 
     def run(self, jd):
         self.fit(jd)
+        self.post_process()
         self.validation_evaluation = self._run_evaluation(self.validation_filter)
         self.test_evaluation = self._run_evaluation(self.test_filter)
 
