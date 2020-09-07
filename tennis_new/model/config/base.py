@@ -1,5 +1,5 @@
 class BaseModel(object):
-
+    # TODO: Leave room for post-processing / calibrating predictions
     def __init__(self, predictor_state=None):
         if predictor_state is not None:
             self.predictor = self.predictor_class(**predictor_state)
@@ -18,10 +18,29 @@ class BaseModel(object):
     def weighter(self):
         raise NotImplementedError()
 
+    @property
+    def training_filter(self):
+        raise NotImplementedError()
+
+    @property
+    def validation_filter(self):
+        raise NotImplementedError()
+
+    @property
+    def evaluator(self):
+        raise NotImplementedError()
+
+    @property
+    def test_filter(self):
+        raise NotImplementedError()
+
+    def data_validation(self, X, y):
+        # Validate the X and y data.  By default, do nothing
+        pass
+
     def fit(self, X, y=None):
         # Resets and fits predictor based on X, y
-        self.predictor = self.predictor_class(**self.predictor_conf)
-        self.predictor.fit(X, y)
+        raise NotImplementedError()
 
     def update(self, X, y):
         # Updates predictor based on X, y -- not necessarily only new data

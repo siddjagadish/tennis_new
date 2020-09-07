@@ -94,13 +94,6 @@ class ELOBaseModel(BaseModel):
             raise ValueError(
                 "Tried calling evaluation with filter such that filtered data includes rows not in history_df"
             )
-        # for_eval_df = pd.merge(
-        #     test_set,
-        #     self.history_df,
-        #     left_on=self.match_id_col,
-        #     right_on='match_id'  # TODO: Make fit_and_backfill use self.match_id_col?
-        # )
-        # assert for_eval_df.shape[0] == test_set.shape[0]
         return self.evaluator.evaluate(for_eval_df)
 
     def run(self, X, y=None):
