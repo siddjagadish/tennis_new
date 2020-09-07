@@ -5,18 +5,16 @@ class Filter(object):
 
     sub_filters = []
 
-    @classmethod
-    def keep_condition(cls, df):
+    def keep_condition(self, df):
         # Combines conditions of subfilters
         # Overwritten for single filter
         out = True
-        for sf in cls.sub_filters:
+        for sf in self.sub_filters:
             out &= sf.keep_condition(df)
         return out
 
-    @classmethod
-    def filter_data(cls, df):
-        return df[cls.keep_condition(df)]
+    def filter_data(self, df):
+        return df[self.keep_condition(df)]
 
 
 class MissingScoreFilter(Filter):
@@ -27,7 +25,6 @@ class MissingScoreFilter(Filter):
                 df['p1_sets_won'].notnull() &
                 df['p2_sets_won'].notnull()
         )
-
 
 class PossibleWalkoverFilter(Filter):
 
@@ -103,6 +100,17 @@ class SurfaceFilter(Filter):
         self.include_na = include_na
 
     def keep_condition(self, df):
-        cond = df['surface'] == surface
+        cond = df['surface'] == self.surface
         if self.include_na:
             cond = cond | df['surface'].isnull()
+
+
+class HasOddsFilter(Filter):
+
+    @classmethod
+    def keep_condition(cls, df):
+        return (
+            df['p1_odds'].notnull() &
+            df['p2_odds'].notnull() &
+            (df['p1_odds'] != df['p2_odds'])  # TODO: Remove this condition
+        )

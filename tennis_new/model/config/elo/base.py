@@ -3,7 +3,8 @@ from tennis_new.model.config.base import BaseModel
 from tennis_new.model.utils.filters import (
     Filter,
     DateFilter,
-    TrainingFilter
+    DummyFilter,
+    TrainingFilter,
 )
 from tennis_new.model.utils.evaluation import BasicEvaluator
 from tennis_new.ml.elo import ELOModel
@@ -38,16 +39,25 @@ class ELOBaseModel(BaseModel):
 
     @property
     def training_filter(self):
-        return TrainingFilter
+        return TrainingFilter()
+
+    @property
+    def validation_filter(self):
+        class MyValidationFilter(Filter):
+            sub_filters = [
+                self.training_filter,
+                DateFilter(min_date='2011-01-01', max_date='2015-01-01')
+            ]
+        return MyValidationFilter()
 
     @property
     def test_filter(self):
         class MyTestFilter(Filter):
             sub_filters = [
                 self.training_filter,
-                DateFilter(min_date='2011-01-01', max_date='2015-01-01')
+                DateFilter(min_date='2015-01-01', max_date='2021-01-01')
             ]
-        return MyTestFilter
+        return MyTestFilter()
 
     @property
     def baseline_pred_col(self):
@@ -55,8 +65,7 @@ class ELOBaseModel(BaseModel):
 
     @property
     def evaluator(self):
-        # return BasicEvaluator('prediction', self.baseline_pred_col)  # TODO: Reinclude this
-        return BasicEvaluator('prediction')
+        return BasicEvaluator('prediction', self.baseline_pred_col)
 
     def fit(self, X, y=None):
         # TODO: Should make y a property and expect a df instead of X?
@@ -71,18 +80,33 @@ class ELOBaseModel(BaseModel):
             weights=self.weighter.weight(X),
             filter_mask=train_mask
         )
-
-    def run(self, X, y=None):
-        self.fit(X, y=None)
-        test_set = self.test_filter.filter_data(X)
-        for_eval_df = pd.merge(
-            test_set,
+        self.all_jd = pd.merge(
+            X,
             self.history_df,
             left_on=self.match_id_col,
-            right_on='match_id'  # TODO: Make fit_and_backfill use self.match_id_col?
+            right_on='match_id',
+            how='left'
         )
-        assert for_eval_df.shape[0] == test_set.shape[0]
-        self.evaluation = self.evaluator.evaluate(for_eval_df)
+
+    def _run_evaluation(self, data_filter):
+        for_eval_df = data_filter.filter_data(self.all_jd)
+        if not for_eval_df[self.match_id_col].isin(self.history_df['match_id']).all():
+            raise ValueError(
+                "Tried calling evaluation with filter such that filtered data includes rows not in history_df"
+            )
+        # for_eval_df = pd.merge(
+        #     test_set,
+        #     self.history_df,
+        #     left_on=self.match_id_col,
+        #     right_on='match_id'  # TODO: Make fit_and_backfill use self.match_id_col?
+        # )
+        # assert for_eval_df.shape[0] == test_set.shape[0]
+        return self.evaluator.evaluate(for_eval_df)
+
+    def run(self, X, y=None):
+        self.fit(X, y)
+        self.validation_evaluation = self._run_evaluation(self.validation_filter)
+        self.test_evaluation = self._run_evaluation(self.test_filter)
 
     def update(self, X, y):
         # For now, update just calls fit
