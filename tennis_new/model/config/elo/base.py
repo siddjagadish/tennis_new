@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from tennis_new.model.config.base import BaseModel
 from tennis_new.model.base import DummyWeighter
@@ -5,6 +6,8 @@ from tennis_new.model.utils.filters import (
     Filter,
     DateFilter,
     TrainingFilter,
+    MissingScoreFilter,
+    MissingPIDFilter
 )
 from tennis_new.model.utils.evaluation import BasicEvaluator
 from tennis_new.ml.elo import ELOModel
@@ -38,6 +41,10 @@ class ELOBaseModel(BaseModel):
         return 'match_link'
 
     @property
+    def date_col(self):
+        return 'date'
+
+    @property
     def training_filter(self):
         return TrainingFilter()
 
@@ -45,7 +52,8 @@ class ELOBaseModel(BaseModel):
     def validation_filter(self):
         class MyValidationFilter(Filter):
             sub_filters = [
-                self.training_filter,
+                MissingPIDFilter(),
+                MissingScoreFilter(),
                 DateFilter(min_date='2011-01-01', max_date='2015-01-01')
             ]
         return MyValidationFilter()
@@ -53,8 +61,9 @@ class ELOBaseModel(BaseModel):
     @property
     def test_filter(self):
         class MyTestFilter(Filter):
-            sub_filters = [
-                self.training_filter,
+            sub_filters = TrainingFilter.sub_filters + [
+                MissingPIDFilter(),
+                MissingScoreFilter(),
                 DateFilter(min_date='2015-01-01', max_date='2021-01-01')
             ]
         return MyTestFilter()
@@ -75,6 +84,8 @@ class ELOBaseModel(BaseModel):
         # TODO: Should make y a property and expect a df instead of X?
         assert self.winner_id_col in df
         assert self.loser_id_col in df
+        # Assert df is sorted
+        assert np.array_equal(df[self.date_col].values, df[self.date_col].sort_values(ascending=True).values)
         train_mask = self.training_filter.keep_condition(df)
         if self.y is not None:
             ys = df[self.y].values
@@ -104,8 +115,8 @@ class ELOBaseModel(BaseModel):
             )
         return self.evaluator.evaluate(for_eval_df)
 
-    def run(self, jd):
-        self.fit(jd)
+    def run(self, df):
+        self.fit(df)
         self.post_process()
         self.validation_evaluation = self._run_evaluation(self.validation_filter)
         self.test_evaluation = self._run_evaluation(self.test_filter)
