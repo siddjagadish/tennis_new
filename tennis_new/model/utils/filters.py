@@ -10,6 +10,8 @@ class Filter(object):
         # Overwritten for single filter
         out = True
         for sf in self.sub_filters:
+            if isinstance(sf, type):
+                raise TypeError("sub_filters must be list of Filter instances, not types")
             out &= sf.keep_condition(df)
         return out
 
@@ -25,6 +27,7 @@ class MissingScoreFilter(Filter):
                 df['p1_sets_won'].notnull() &
                 df['p2_sets_won'].notnull()
         )
+
 
 class PossibleWalkoverFilter(Filter):
 
@@ -61,8 +64,8 @@ class MissingPIDFilter(Filter):
 class TrainingFilter(Filter):
 
     sub_filters = [
-        MissingPIDFilter,
-        MissingScoreFilter
+        MissingPIDFilter(),
+        MissingScoreFilter()
     ]
 
 
@@ -111,6 +114,5 @@ class HasOddsFilter(Filter):
     def keep_condition(cls, df):
         return (
             df['p1_odds'].notnull() &
-            df['p2_odds'].notnull() &
-            (df['p1_odds'] != df['p2_odds'])  # TODO: Remove this condition
+            df['p2_odds'].notnull()
         )

@@ -85,9 +85,7 @@ class ELOModel(object):
             y1s = ys[:, 0]
             y2s = ys[:, 1]
         else:
-            ys = ys.astype(int)
-            y1s = ys
-            y2s = 1 - ys
+            raise ValueError("ELO Class Only Equipped to Handle Array-valued ys.  Otherwise, use winner_mod=True")
 
         if weights is None:
             weights = np.ones(len(p1_ids)).tolist()
