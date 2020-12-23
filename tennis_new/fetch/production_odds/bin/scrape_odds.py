@@ -18,7 +18,7 @@ def main():
     itf_n_attempts = 0
     while not itf_success and itf_n_attempts <= MAX_ATTEMPTS:
         try:
-            print("Sleeping 20 seconds between attempts at ITF Scraping...")
+            print("Sleeping %d seconds between attempts at ITF Scraping..." % SLEEP_INTERVAL)
             sleep(SLEEP_INTERVAL)
             itf_scraper = BetOnlineScraper(ITF_URL)
             itf_data = itf_scraper.scrape()
@@ -32,7 +32,7 @@ def main():
     exhibition_n_attempts = 0
     while not exhibition_success and exhibition_n_attempts <= MAX_ATTEMPTS:
         try:
-            print("Sleeping 20 seconds between attempts at Exhibition Scraping...")
+            print("Sleeping %d seconds between attempts at Exhibition Scraping..." % SLEEP_INTERVAL)
             sleep(SLEEP_INTERVAL)
             exhibition_scraper = BetOnlineScraper(EXHIBITION_URL)
             exhibition_data = exhibition_scraper.scrape()
